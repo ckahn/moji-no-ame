@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Katakana Rain</title>
+  <style>
+    :root {
+      --ink: #F5EFE0;
+      --night1: #0C1830;
+      --night2: #1E3D63;
+      --gold: #F2B134;
+      --red: #E4504B;
+      --foam: #4A7BAA;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, var(--night1) 0%, var(--night2) 100%);
+      color: var(--ink);
+      font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    button, input { font: inherit; }
+
+    .kr-jp {
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Meiryo", system-ui, sans-serif;
+    }
+
+    .setup-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .setup-card {
+      max-width: 600px;
+      width: 100%;
+      animation: kr-fall-in .5s ease;
+      padding-bottom: 40px;
+    }
+
+    .title {
+      font-size: 64px;
+      line-height: 1;
+      color: var(--gold);
+      text-shadow: 0 0 24px rgba(242,177,52,.35);
+      margin-top: 12px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      letter-spacing: 0.25em;
+      opacity: 0.7;
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
+
+    .set-list {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tile-list {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .section-title {
+      margin-top: 26px;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+
+    .set-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      border: 2px solid rgba(245,239,224,.25);
+      background: transparent;
+      padding: 14px 16px;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+
+    .set-row.selected {
+      border-color: var(--gold);
+      background: rgba(242,177,52,.08);
+    }
+
+    .tile-row {
+      display: block;
+      cursor: pointer;
+      border: 2px solid rgba(245,239,224,.25);
+      background: transparent;
+      padding: 12px 10px;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+      text-align: center;
+    }
+
+    .tile-row.selected {
+      border-color: var(--gold);
+      background: rgba(242,177,52,.08);
+    }
+
+    .tile-row input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .tile-number {
+      font-size: 28px;
+      line-height: 1;
+      color: var(--gold);
+    }
+
+    .tile-label {
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tile-desc {
+      margin-top: 4px;
+      font-size: 10px;
+      opacity: 0.58;
+      line-height: 1.35;
+    }
+
+    .set-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--gold);
+    }
+
+    .set-copy { flex: 1; }
+
+    .set-label {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .set-desc {
+      font-size: 12px;
+      opacity: 0.65;
+      margin-top: 2px;
+    }
+
+    .set-count {
+      font-size: 13px;
+      opacity: 0.7;
+    }
+
+    .start-button {
+      margin-top: 24px;
+      width: 100%;
+      padding: 16px 0;
+      border: 0;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      background: var(--gold);
+      color: var(--night1);
+    }
+
+    .start-button:disabled {
+      background: rgba(245,239,224,.15);
+      color: rgba(245,239,224,.4);
+      cursor: not-allowed;
+    }
+
+    .button-row {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .button-row .start-button {
+      margin-top: 0;
+    }
+
+    .continue-button {
+      background: var(--gold);
+      color: var(--night1);
+    }
+
+    .restart-button {
+      background: rgba(245,239,224,.08);
+      color: var(--ink);
+      border: 2px solid rgba(245,239,224,.35);
+    }
+
+    .restart-button:disabled {
+      background: rgba(245,239,224,.08);
+      color: rgba(245,239,224,.4);
+      border-color: rgba(245,239,224,.15);
+    }
+
+    .instructions {
+      margin-top: 16px;
+      font-size: 12px;
+      opacity: 0.58;
+      line-height: 1.7;
+    }
+
+    .gameover-panel {
+      margin-top: 28px;
+      border: 2px solid var(--red);
+      padding: 18px 20px;
+      background: rgba(228,80,75,.08);
+    }
+
+    .gameover-title {
+      font-size: 26px;
+      color: var(--red);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+      margin-top: 14px;
+      font-size: 14px;
+    }
+
+    .review-section { margin-top: 18px; }
+
+    .review-label {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      opacity: 0.7;
+    }
+
+    .pill-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      border: 1px solid var(--gold);
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    .pill.red { border-color: var(--red); }
+
+    .wrong-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .game-root {
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(180deg, var(--night1) 0%, #16304F 60%, var(--night2) 100%);
+      cursor: pointer;
+    }
+
+    .hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 14px 20px;
+      font-size: 13px;
+      z-index: 5;
+      letter-spacing: 0.1em;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .hud-left, .hud-right { min-width: 220px; }
+    .hud-right { text-align: right; }
+
+    .hud b {
+      font-size: 18px;
+    }
+
+    .muted { opacity: 0.6; }
+    .gold { color: var(--gold); }
+    .red { color: var(--red); }
+
+    .progress-shell {
+      margin-top: 8px;
+      width: 260px;
+      height: 7px;
+      border: 1px solid rgba(245,239,224,.3);
+      background: rgba(245,239,224,.08);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--gold);
+      transition: width .15s linear;
+    }
+
+    .progress-copy {
+      margin-top: 5px;
+      font-size: 10px;
+      opacity: 0.55;
+      letter-spacing: 0.12em;
+    }
+
+    .hearts {
+      font-size: 22px;
+      letter-spacing: 0.15em;
+      text-align: center;
+      min-width: 110px;
+    }
+
+    .heart.filled { color: var(--red); }
+    .heart.empty { color: rgba(245,239,224,.18); }
+    .heart.pulse { animation: kr-heart-lost .4s ease; }
+
+    .falling-kana {
+      position: absolute;
+      color: var(--ink);
+      text-shadow: 0 0 10px rgba(245,239,224,.25);
+      z-index: 2;
+      user-select: none;
+      pointer-events: none;
+      transition: color .2s;
+    }
+
+    .falling-kana.danger {
+      color: var(--red);
+      text-shadow: 0 0 14px rgba(228,80,75,.6);
+    }
+
+    .particle {
+      position: absolute;
+      font-size: 42px;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .particle.clear {
+      color: var(--gold);
+      text-shadow: 0 0 18px rgba(242,177,52,.8);
+      animation: kr-pop .6s ease-out forwards;
+    }
+
+    .particle.splash {
+      color: var(--red);
+      text-shadow: 0 0 18px rgba(228,80,75,.8);
+      animation: kr-splash .6s ease-out forwards;
+    }
+
+    .wave-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 81%;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .wave-inner {
+      position: absolute;
+      inset: 0 -160px 0 0;
+      animation: kr-wave-drift 7s linear infinite;
+    }
+
+    .input-display-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 4%;
+      display: flex;
+      justify-content: center;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .input-display {
+      min-width: 220px;
+      text-align: center;
+      padding: 12px 28px;
+      border: 2px solid rgba(245,239,224,.4);
+      background: rgba(12,24,48,.85);
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+    }
+
+    .input-display.shake {
+      border-color: var(--red);
+      color: var(--red);
+      animation: kr-shake .35s ease;
+    }
+
+    .placeholder {
+      opacity: 0.3;
+      font-size: 16px;
+      letter-spacing: 0.1em;
+    }
+
+    .caret {
+      animation: kr-blink 1s step-end infinite;
+      color: var(--gold);
+    }
+
+    .banner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 7;
+      pointer-events: none;
+    }
+
+    .banner-title {
+      font-size: 72px;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(242,177,52,.5);
+      animation: kr-fall-in .4s ease;
+    }
+
+    .banner-sub {
+      font-size: 14px;
+      opacity: 0.7;
+      letter-spacing: 0.2em;
+    }
+
+    .pause-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(12,24,48,.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 8;
+    }
+
+    .pause-card { text-align: center; }
+
+    .pause-title {
+      font-size: 48px;
+      color: var(--gold);
+    }
+
+    .pause-sub {
+      font-size: 13px;
+      opacity: 0.7;
+      margin-top: 8px;
+      letter-spacing: 0.15em;
+    }
+
+    @keyframes kr-fall-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes kr-pop {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    @keyframes kr-splash {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.5) translateY(26px); opacity: 0; }
+    }
+
+    @keyframes kr-shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    @keyframes kr-blink {
+      0%,49% { opacity: 1; }
+      50%,100% { opacity: 0; }
+    }
+
+    @keyframes kr-wave-drift {
+      from { transform: translateX(0); }
+      to { transform: translateX(-140px); }
+    }
+
+    @keyframes kr-heart-lost {
+      0% { transform: scale(1.6); }
+      100% { transform: scale(1); }
+    }
+
+    @media (max-width: 720px) {
+      .title { font-size: 48px; }
+      .subtitle { font-size: 11px; letter-spacing: .16em; }
+      .button-row { grid-template-columns: 1fr; }
+      .tile-list { grid-template-columns: repeat(2, 1fr); }
+      .hud {
+        padding: 10px 12px;
+        font-size: 11px;
+        gap: 8px;
+      }
+      .hud-left, .hud-right { min-width: 0; width: 38%; }
+      .progress-shell { width: 100%; }
+      .hearts { min-width: 70px; font-size: 18px; }
+      .input-display { font-size: 24px; min-width: 180px; }
+      .banner-title { font-size: 48px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    "use strict";
+
+    const SETS = {
+      basic: {
+        label: "Basic (五十音)",
+        desc: "ア through ン — the core 46",
+        kana: [
+          ["ア", ["a"]], ["イ", ["i"]], ["ウ", ["u"]], ["エ", ["e"]], ["オ", ["o"]],
+          ["カ", ["ka"]], ["キ", ["ki"]], ["ク", ["ku"]], ["ケ", ["ke"]], ["コ", ["ko"]],
+          ["サ", ["sa"]], ["シ", ["shi", "si"]], ["ス", ["su"]], ["セ", ["se"]], ["ソ", ["so"]],
+          ["タ", ["ta"]], ["チ", ["chi", "ti"]], ["ツ", ["tsu", "tu"]], ["テ", ["te"]], ["ト", ["to"]],
+          ["ナ", ["na"]], ["ニ", ["ni"]], ["ヌ", ["nu"]], ["ネ", ["ne"]], ["ノ", ["no"]],
+          ["ハ", ["ha"]], ["ヒ", ["hi"]], ["フ", ["fu", "hu"]], ["ヘ", ["he"]], ["ホ", ["ho"]],
+          ["マ", ["ma"]], ["ミ", ["mi"]], ["ム", ["mu"]], ["メ", ["me"]], ["モ", ["mo"]],
+          ["ヤ", ["ya"]], ["ユ", ["yu"]], ["ヨ", ["yo"]],
+          ["ラ", ["ra"]], ["リ", ["ri"]], ["ル", ["ru"]], ["レ", ["re"]], ["ロ", ["ro"]],
+          ["ワ", ["wa"]], ["ヲ", ["wo", "o"]], ["ン", ["n", "nn"]],
+        ],
+      },
+      dakuten: {
+        label: "Dakuten & Handakuten (濁点・半濁点)",
+        desc: "The little marks — ガ, ザ, ダ, バ, パ rows",
+        kana: [
+          ["ガ", ["ga"]], ["ギ", ["gi"]], ["グ", ["gu"]], ["ゲ", ["ge"]], ["ゴ", ["go"]],
+          ["ザ", ["za"]], ["ジ", ["ji", "zi"]], ["ズ", ["zu"]], ["ゼ", ["ze"]], ["ゾ", ["zo"]],
+          ["ダ", ["da"]], ["ヂ", ["ji", "di"]], ["ヅ", ["zu", "du"]], ["デ", ["de"]], ["ド", ["do"]],
+          ["バ", ["ba"]], ["ビ", ["bi"]], ["ブ", ["bu"]], ["ベ", ["be"]], ["ボ", ["bo"]],
+          ["パ", ["pa"]], ["ピ", ["pi"]], ["プ", ["pu"]], ["ペ", ["pe"]], ["ポ", ["po"]],
+        ],
+      },
+      yoon: {
+        label: "Yōon (拗音)",
+        desc: "Big + small combos — キャ, シュ, ジョ…",
+        kana: [
+          ["キャ", ["kya"]], ["キュ", ["kyu"]], ["キョ", ["kyo"]],
+          ["シャ", ["sha", "sya"]], ["シュ", ["shu", "syu"]], ["ショ", ["sho", "syo"]],
+          ["チャ", ["cha", "tya"]], ["チュ", ["chu", "tyu"]], ["チョ", ["cho", "tyo"]],
+          ["ニャ", ["nya"]], ["ニュ", ["nyu"]], ["ニョ", ["nyo"]],
+          ["ヒャ", ["hya"]], ["ヒュ", ["hyu"]], ["ヒョ", ["hyo"]],
+          ["ミャ", ["mya"]], ["ミュ", ["myu"]], ["ミョ", ["myo"]],
+          ["リャ", ["rya"]], ["リュ", ["ryu"]], ["リョ", ["ryo"]],
+          ["ギャ", ["gya"]], ["ギュ", ["gyu"]], ["ギョ", ["gyo"]],
+          ["ジャ", ["ja", "jya", "zya"]], ["ジュ", ["ju", "jyu", "zyu"]], ["ジョ", ["jo", "jyo", "zyo"]],
+          ["ビャ", ["bya"]], ["ビュ", ["byu"]], ["ビョ", ["byo"]],
+          ["ピャ", ["pya"]], ["ピュ", ["pyu"]], ["ピョ", ["pyo"]],
+        ],
+      },
+    };
+
+    const TILE_SIZES = [
+      { value: 1, label: "Single", desc: "one kana per falling tile" },
+      { value: 2, label: "Double", desc: "type both together" },
+      { value: 3, label: "Triple", desc: "three-part tiles" },
+      { value: 4, label: "Quad", desc: "longer chunks" },
+    ];
+
+    const GROUND_Y = 78;
+    const MAX_LIVES = 3;
+    const app = document.getElementById("app");
+
+    const baseSpeed = (level) => (6 + level * 1.6) * 1.1;
+    const spawnInterval = (level) => Math.max(2600 - (level - 1) * 220, 950);
+    const speedTier = (level) => level; // levels are pure speed progression: level 2 is faster than level 1
+    const tileSizeName = (size) => (TILE_SIZES.find((t) => t.value === size) || TILE_SIZES[0]).label.toLowerCase();
+    const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[ch]));
+
+    const fmtTime = (ms) => {
+      const s = Math.floor(ms / 1000);
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    };
+
+    const ROMAJI = {};
+    for (const set of Object.values(SETS)) {
+      for (const [k, r] of set.kana) ROMAJI[k] = r;
+    }
+
+    const struggleStore = new Map();
+    const bumpStruggle = (kana, delta) => {
+      struggleStore.set(kana, Math.max(0, (struggleStore.get(kana) || 0) + delta));
+    };
+
+    let nextId = 0;
+    const uid = () => ++nextId;
+
+    let screen = "setup";
+    let selected = { basic: true, dakuten: false, yoon: false };
+    let selectedTileSize = 1;
+    let inputText = "";
+    let shake = false;
+    let banner = null;
+    let finalStats = null;
+    let rafId = null;
+    let game = null;
+    let lastLivesForPulse = MAX_LIVES;
+
+    function selectedPool() {
+      return Object.keys(selected).filter((k) => selected[k]).flatMap((k) => SETS[k].kana);
+    }
+
+    function buildQueue(pool) {
+      const entries = [];
+      for (const [k, r] of pool) {
+        entries.push([k, r]);
+        const score = struggleStore.get(k) || 0;
+        const extras = Math.min(Math.floor(score / 2), 2);
+        for (let i = 0; i < extras; i++) entries.push([k, r]);
+      }
+      return entries
+        .map((e) => ({ e, key: Math.random() / (1 + (struggleStore.get(e[0]) || 0)) }))
+        .sort((a, b) => a.key - b.key)
+        .map((x) => x.e);
+    }
+
+    function buildLevelQueue(pool, size) {
+      const entries = buildQueue(pool);
+      if (size === 1) return entries.map((e) => [e]);
+      const ns = entries.filter((e) => e[0] === "ン");
+      const rest = entries.filter((e) => e[0] !== "ン");
+      const groups = [];
+      while (rest.length || ns.length) {
+        const group = [];
+        while (group.length < size - 1 && rest.length) group.push(rest.shift());
+        if (ns.length) group.push(ns.shift());
+        else if (rest.length) group.push(rest.shift());
+        if (group.length) groups.push(group);
+      }
+      return groups;
+    }
+
+    function acceptFor(parts) {
+      return parts.reduce((acc, [, romajiList]) => acc.flatMap((prefix) => romajiList.map((v) => prefix + v)), [""]);
+    }
+
+    function hudFromGame(overrides = {}) {
+      return {
+        level: game.level,
+        tileSize: game.tileSize,
+        remaining: game.queue.length + game.items.length,
+        levelGoal: game.levelGoal,
+        levelCleared: game.levelCleared,
+        errors: game.errors,
+        lives: game.lives,
+        elapsed: game.elapsed,
+        ...overrides,
+      };
+    }
+
+    function renderSetupLike() {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      screen = screen === "gameover" ? "gameover" : "setup";
+      const pool = selectedPool();
+      const totalSelected = pool.length;
+
+      app.innerHTML = `
+        <div class="setup-wrap">
+          <div class="setup-card">
+            <div class="title kr-jp">カタカナの雨</div>
+            <div class="subtitle">Katakana Rain — type the romaji before it hits the sea</div>
+            ${screen === "gameover" && finalStats ? renderGameOverPanel() : ""}
+            <div class="section-title">Kana sets</div>
+            <div class="set-list">
+              ${Object.entries(SETS).map(([key, set]) => `
+                <label class="set-row ${selected[key] ? "selected" : ""}" data-set-key="${key}">
+                  <input type="checkbox" ${selected[key] ? "checked" : ""} />
+                  <div class="set-copy">
+                    <div class="set-label">${escapeHtml(set.label)}</div>
+                    <div class="set-desc">${escapeHtml(set.desc)}</div>
+                  </div>
+                  <div class="set-count kr-jp">${set.kana.length}字</div>
+                </label>
+              `).join("")}
+            </div>
+            <div class="section-title">Tile size</div>
+            <div class="tile-list">
+              ${TILE_SIZES.map((tile) => `
+                <label class="tile-row ${selectedTileSize === tile.value ? "selected" : ""}" data-tile-size="${tile.value}">
+                  <input type="radio" name="tileSize" ${selectedTileSize === tile.value ? "checked" : ""} />
+                  <div class="tile-number">${tile.value}</div>
+                  <div class="tile-label">${escapeHtml(tile.label)}</div>
+                  <div class="tile-desc">${escapeHtml(tile.desc)}</div>
+                </label>
+              `).join("")}
+            </div>
+            ${screen === "gameover" && finalStats && finalStats.level > 1 ? `
+              <div class="button-row">
+                <button class="start-button continue-button" id="continueButton" ${totalSelected === 0 ? "disabled" : ""}>
+                  CONTINUE LEVEL ${finalStats.level}
+                </button>
+                <button class="start-button restart-button" id="startButton" ${totalSelected === 0 ? "disabled" : ""}>
+                  RESTART FROM LEVEL 1${totalSelected > 0 ? ` — ${totalSelected} kana, ${selectedTileSize}-tile` : ""}
+                </button>
+              </div>
+            ` : `
+              <button class="start-button" id="startButton" ${totalSelected === 0 ? "disabled" : ""}>
+                START${totalSelected > 0 ? ` — ${totalSelected} kana, ${selectedTileSize}-tile` : ""}
+              </button>
+            `}
+            <div class="instructions">
+              Type the romaji, press <b>SPACE</b> or <b>ENTER</b> to fire — the lowest matching item clears.
+              Every level covers the <b>full selected set</b>, chunked using the tile size you chose.
+              Tile size controls what appears in each falling block — single kana, pairs, triples, or quads.
+              Levels now only control speed: <b>level 2 is faster than level 1</b>, level 3 is faster again, and so on.
+              The <b>LEFT THIS LEVEL</b> counter shows queued plus falling tiles. When it reaches <b>0</b>, you win the level.
+              Anything that reaches the water costs a heart — but only the <b>first</b> time for that exact kana/combo;
+              repeats keep coming back until you clear them. ${MAX_LIVES} unique drops and it's over.
+              If level 1 drains all hearts, you still see your results here, but the button returns to the normal
+              <b>START</b> flow. After losing on level 2 or later, <b>CONTINUE LEVEL N</b> restarts the
+              level you lost with full hearts; <b>RESTART FROM LEVEL 1</b> starts over.
+              The game notices what you fumble and quietly deals it back sooner and more often.
+              <b>ESC</b> or a click pauses while playing.
+            </div>
+          </div>
+        </div>
+      `;
+
+      app.querySelectorAll(".set-row").forEach((row) => {
+        row.addEventListener("change", () => {
+          const key = row.getAttribute("data-set-key");
+          selected[key] = !selected[key];
+          renderSetupLike();
+        });
+      });
+
+      app.querySelectorAll(".tile-row").forEach((row) => {
+        row.addEventListener("change", () => {
+          selectedTileSize = Number(row.getAttribute("data-tile-size")) || 1;
+          renderSetupLike();
+        });
+      });
+
+      const startButton = document.getElementById("startButton");
+      if (startButton) startButton.addEventListener("click", startGame);
+
+      const continueButton = document.getElementById("continueButton");
+      if (continueButton) continueButton.addEventListener("click", continueCurrentLevel);
+    }
+
+    function renderGameOverPanel() {
+      const fs = finalStats;
+      return `
+        <div class="gameover-panel">
+          <div class="gameover-title kr-jp">波に飲まれた…</div>
+          <div class="stats-grid">
+            <div>Level reached <b class="gold">${fs.level}</b></div>
+            <div>Tile size <b class="gold">${fs.tileSize || selectedTileSize}</b></div>
+            <div>Kana cleared <b class="gold">${fs.cleared}</b></div>
+            <div>Missed <b class="red">${fs.errors}</b></div>
+            <div>Time <b class="gold">${fmtTime(fs.elapsed)}</b></div>
+          </div>
+          ${fs.drowned.length ? `
+            <div class="review-section">
+              <div class="review-label">STUDY THESE — fell in the water</div>
+              <div class="pill-wrap">
+                ${fs.drowned.map((d) => `
+                  <div class="pill red">
+                    <span class="kr-jp" style="font-size:20px;margin-right:8px;">${escapeHtml(d.k)}</span>
+                    <span class="gold">${escapeHtml(d.r)}</span>
+                    ${d.n > 1 ? `<span style="opacity:.6;"> ×${d.n}</span>` : ""}
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+          ${fs.struggling.length ? `
+            <div class="review-section">
+              <div class="review-label">STILL SHAKY — these get dealt sooner & more often next run</div>
+              <div class="pill-wrap">
+                ${fs.struggling.map((d) => `
+                  <div class="pill">
+                    <span class="kr-jp" style="font-size:20px;margin-right:8px;">${escapeHtml(d.k)}</span>
+                    <span class="gold">${escapeHtml(d.r)}</span>
+                    <span style="opacity:.55;"> ${"•".repeat(Math.min(d.n, 5))}</span>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+          ${fs.wrong.length ? `
+            <div class="review-section">
+              <div class="review-label">MISSED — what you typed vs. the lowest kana at the time</div>
+              <div class="wrong-list">
+                ${fs.wrong.map((w) => `
+                  <div style="opacity:.9;">
+                    <span class="red" style="text-decoration:line-through;">${escapeHtml(w.typed)}</span>
+                    ${w.k !== "—" ? `
+                      <span style="opacity:.5;"> → probably </span>
+                      <span class="kr-jp" style="font-size:17px;">${escapeHtml(w.k)}</span>
+                      <span style="opacity:.5;"> = </span>
+                      <span class="gold">${escapeHtml(w.r)}</span>
+                    ` : ""}
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }
+
+    function startGame() {
+      startLevel(1, false);
+    }
+
+    function continueCurrentLevel() {
+      startLevel(finalStats ? finalStats.level : 1, true);
+    }
+
+    function startLevel(level, isContinue) {
+      const pool = selectedPool();
+      if (pool.length === 0) return;
+      finalStats = null;
+      const levelQueue = buildLevelQueue(pool, selectedTileSize);
+      inputText = "";
+      shake = false;
+      banner = isContinue ? { text: `LEVEL ${level}`, sub: "CONTINUE — restarting this level" } : null;
+      lastLivesForPulse = MAX_LIVES;
+      game = {
+        items: [],
+        queue: levelQueue,
+        pool,
+        level,
+        tileSize: selectedTileSize,
+        levelGoal: levelQueue.length,
+        levelCleared: 0,
+        lives: MAX_LIVES,
+        errors: 0,
+        wrongLog: [],
+        drownLog: [],
+        drownedSet: new Set(),
+        totalCleared: 0,
+        elapsed: 0,
+        lastSpawn: 0,
+        nextGap: 600,
+        lastTs: null,
+        bannerUntil: isContinue ? performance.now() + 1600 : 0,
+        over: false,
+        paused: false,
+      };
+      screen = "playing";
+      renderGameShell();
+      updatePlayDom(hudFromGame());
+      if (banner) {
+        window.setTimeout(() => {
+          banner = null;
+          updateBannerDom();
+        }, 1600);
+      }
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function renderGameShell() {
+      app.innerHTML = `
+        <div class="game-root" id="gameRoot">
+          <div class="hud">
+            <div class="hud-left">
+              <span class="muted">LEVEL </span><b class="gold" id="hudLevel">1</b>
+              <span class="muted" style="margin-left:18px;">TILE </span><b id="hudTileSize">1</b>
+              <span class="muted" style="margin-left:18px;">LEFT THIS LEVEL </span><b id="hudRemaining">0</b>
+              <div class="progress-shell"><div class="progress-fill" id="progressFill"></div></div>
+              <div class="progress-copy" id="progressCopy">clear everything to advance</div>
+            </div>
+            <div class="hearts kr-jp" id="hearts"></div>
+            <div class="hud-right">
+              <span class="muted">TIME </span><b id="hudTime">0:00</b>
+              <span class="muted" style="margin-left:18px;">MISSED </span><b id="hudErrors">0</b>
+            </div>
+          </div>
+          <div id="itemsLayer"></div>
+          <div id="particlesLayer"></div>
+          <div class="wave-wrap">
+            <div class="wave-inner">
+              <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1400 200" style="display:block;">
+                <path d="M0,40 Q70,10 140,40 T280,40 T420,40 T560,40 T700,40 T840,40 T980,40 T1120,40 T1260,40 T1400,40 L1400,200 L0,200 Z" fill="#0A1526" stroke="#4A7BAA" stroke-width="3"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="input-display-wrap">
+            <div class="input-display" id="inputDisplay"></div>
+          </div>
+          <div id="bannerLayer"></div>
+          <div id="pauseLayer"></div>
+        </div>
+      `;
+
+      document.getElementById("gameRoot").addEventListener("click", togglePause);
+    }
+
+    function loop(ts) {
+      if (!game || game.over || screen !== "playing") return;
+
+      if (game.lastTs == null) game.lastTs = ts;
+      const dt = Math.min(ts - game.lastTs, 100);
+      game.lastTs = ts;
+
+      if (!game.paused && ts >= game.bannerUntil) {
+        game.elapsed += dt;
+
+        if (game.queue.length > 0 && ts - game.lastSpawn > game.nextGap) {
+          const parts = game.queue.shift();
+          const tier = speedTier(game.level);
+          game.items.push({
+            id: uid(),
+            parts,
+            text: parts.map((p) => p[0]).join(""),
+            accept: acceptFor(parts),
+            x: 6 + Math.random() * (parts.length > 1 ? 72 : 82),
+            y: -8,
+            speed: baseSpeed(tier) * (0.85 + Math.random() * 0.3),
+            sway: Math.random() * Math.PI * 2,
+          });
+          game.lastSpawn = ts;
+          game.nextGap = spawnInterval(tier) * (0.8 + Math.random() * 0.4);
+        }
+
+        for (const item of game.items) {
+          item.y += (item.speed * dt) / 1000;
+          item.sway += dt / 900;
+        }
+
+        const drownedNow = game.items.filter((item) => item.y >= GROUND_Y);
+        if (drownedNow.length > 0) {
+          game.items = game.items.filter((item) => item.y < GROUND_Y);
+          for (const drowned of drownedNow) {
+            if (!game.drownedSet.has(drowned.text)) {
+              game.drownedSet.add(drowned.text);
+              game.lives -= 1;
+            }
+            for (const [k, r] of drowned.parts) {
+              game.drownLog.push({ k, r: r[0] });
+              bumpStruggle(k, 2);
+            }
+            addParticle({ x: drowned.x, y: GROUND_Y, k: drowned.text, kind: "splash" });
+            if (game.lives > 0) {
+              const idx = Math.floor(Math.random() * (game.queue.length + 1));
+              game.queue.splice(idx, 0, drowned.parts);
+            }
+          }
+          if (game.lives <= 0) {
+            updatePlayDom(hudFromGame({ lives: 0 }));
+            endGame();
+            return;
+          }
+        }
+
+        if (game.queue.length === 0 && game.items.length === 0) {
+          game.level += 1;
+          game.queue = buildLevelQueue(game.pool, game.tileSize);
+          game.levelGoal = game.queue.length;
+          game.levelCleared = 0;
+          game.bannerUntil = ts + 1600;
+          const sub = `速くなる — faster ${tileSizeName(game.tileSize)} tiles`;
+          banner = { text: `LEVEL ${game.level}`, sub };
+          window.setTimeout(() => {
+            banner = null;
+            updateBannerDom();
+          }, 1600);
+        }
+      }
+
+      updatePlayDom(hudFromGame());
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function addParticle(particle) {
+      const particleWithId = { ...particle, id: uid() };
+      game.particles = game.particles || [];
+      game.particles.push(particleWithId);
+      window.setTimeout(() => {
+        if (!game || !game.particles) return;
+        game.particles = game.particles.filter((p) => p.id !== particleWithId.id);
+        updateParticlesDom();
+      }, 700);
+    }
+
+    function submitInput() {
+      if (!game || game.over) return;
+      const val = inputText.trim().toLowerCase();
+      inputText = "";
+      updateInputDom();
+      if (!val) return;
+
+      let target = null;
+      for (const item of game.items) {
+        if (item.accept.includes(val) && (!target || item.y > target.y)) target = item;
+      }
+
+      if (target) {
+        game.items = game.items.filter((item) => item.id !== target.id);
+        game.totalCleared += 1;
+        game.levelCleared += 1;
+        for (const [k] of target.parts) bumpStruggle(k, -1);
+        addParticle({ x: target.x, y: target.y, k: target.text, kind: "clear" });
+      } else {
+        game.errors += 1;
+        let lowest = null;
+        for (const item of game.items) if (!lowest || item.y > lowest.y) lowest = item;
+        game.wrongLog.push({ typed: val, k: lowest ? lowest.text : "—", r: lowest ? lowest.accept[0] : "" });
+        if (lowest) {
+          for (const [k] of lowest.parts) bumpStruggle(k, 1);
+          const copies = game.queue.filter((group) => group.map((p) => p[0]).join("") === lowest.text).length;
+          if (copies < 2) {
+            const idx = Math.floor(Math.random() * Math.min(4, game.queue.length + 1));
+            game.queue.splice(idx, 0, lowest.parts);
+            game.levelGoal += 1;
+          }
+        }
+        shake = true;
+        updateInputDom();
+        window.setTimeout(() => {
+          shake = false;
+          updateInputDom();
+        }, 350);
+      }
+    }
+
+    function togglePause() {
+      if (!game || game.over || screen !== "playing") return;
+      game.paused = !game.paused;
+      updatePauseDom();
+    }
+
+    function endGame() {
+      if (!game) return;
+      game.over = true;
+      const drownCounts = {};
+      for (const d of game.drownLog) {
+        drownCounts[d.k] = drownCounts[d.k] || { k: d.k, r: d.r, n: 0 };
+        drownCounts[d.k].n += 1;
+      }
+      finalStats = {
+        level: game.level,
+        tileSize: game.tileSize,
+        cleared: game.totalCleared,
+        errors: game.errors,
+        elapsed: game.elapsed,
+        drowned: Object.values(drownCounts).sort((a, b) => b.n - a.n),
+        wrong: game.wrongLog.slice(-12),
+        struggling: [...struggleStore.entries()]
+          .filter(([, n]) => n > 0)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 12)
+          .map(([k, n]) => ({ k, n, r: (ROMAJI[k] || ["?"])[0] })),
+      };
+      window.setTimeout(() => {
+        screen = "gameover";
+        if (finalStats && finalStats.level === 1) game = null;
+        renderSetupLike();
+      }, 900);
+    }
+
+    function updatePlayDom(hud) {
+      updateHudDom(hud);
+      updateItemsDom();
+      updateParticlesDom();
+      updateInputDom();
+      updateBannerDom();
+      updatePauseDom();
+    }
+
+    function updateHudDom(hud) {
+      const levelEl = document.getElementById("hudLevel");
+      if (!levelEl) return;
+      levelEl.textContent = hud.level;
+      document.getElementById("hudTileSize").textContent = hud.tileSize || selectedTileSize;
+      document.getElementById("hudRemaining").textContent = hud.remaining;
+      document.getElementById("hudTime").textContent = fmtTime(hud.elapsed);
+      const errorsEl = document.getElementById("hudErrors");
+      errorsEl.textContent = hud.errors;
+      errorsEl.className = hud.errors ? "red" : "";
+
+      const goal = Math.max(hud.levelGoal || 0, 1);
+      const pct = Math.max(0, Math.min(100, (hud.levelCleared / goal) * 100));
+      document.getElementById("progressFill").style.width = `${pct}%`;
+      document.getElementById("progressCopy").textContent = `${hud.levelCleared}/${hud.levelGoal} tiles cleared — ${hud.remaining} left`;
+
+      const heartsEl = document.getElementById("hearts");
+      heartsEl.innerHTML = Array.from({ length: MAX_LIVES }).map((_, i) => {
+        const filled = i < hud.lives;
+        const pulse = i === hud.lives && hud.lives < lastLivesForPulse;
+        return `<span class="heart ${filled ? "filled" : "empty"} ${pulse ? "pulse" : ""}">♥</span>`;
+      }).join("");
+      lastLivesForPulse = hud.lives;
+    }
+
+    function updateItemsDom() {
+      const layer = document.getElementById("itemsLayer");
+      if (!layer || !game) return;
+      layer.innerHTML = game.items.map((item) => {
+        const left = `calc(${item.x}% + ${Math.sin(item.sway) * 8}px)`;
+        const fontSize = Math.max(24, 46 - item.text.length * 4);
+        const danger = item.y > GROUND_Y - 14;
+        return `
+          <div class="falling-kana kr-jp ${danger ? "danger" : ""}" style="left:${left};top:${item.y}%;font-size:${fontSize}px;">
+            ${escapeHtml(item.text)}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateParticlesDom() {
+      const layer = document.getElementById("particlesLayer");
+      if (!layer || !game) return;
+      const particles = game.particles || [];
+      layer.innerHTML = particles.map((p) => `
+        <div class="particle kr-jp ${p.kind}" style="left:${p.x}%;top:${p.y}%;">
+          ${escapeHtml(p.k)}
+        </div>
+      `).join("");
+    }
+
+    function updateInputDom() {
+      const el = document.getElementById("inputDisplay");
+      if (!el) return;
+      el.className = `input-display${shake ? " shake" : ""}`;
+      const body = inputText
+        ? escapeHtml(inputText)
+        : `<span class="placeholder">type romaji…</span>`;
+      el.innerHTML = `${body}<span class="caret">▌</span>`;
+    }
+
+    function updateBannerDom() {
+      const layer = document.getElementById("bannerLayer");
+      if (!layer) return;
+      layer.innerHTML = banner ? `
+        <div class="banner">
+          <div class="banner-title kr-jp">${escapeHtml(banner.text)}</div>
+          <div class="banner-sub">${escapeHtml(banner.sub)}</div>
+        </div>
+      ` : "";
+    }
+
+    function updatePauseDom() {
+      const layer = document.getElementById("pauseLayer");
+      if (!layer || !game) return;
+      layer.innerHTML = game.paused ? `
+        <div class="pause-overlay">
+          <div class="pause-card">
+            <div class="pause-title kr-jp">一時停止</div>
+            <div class="pause-sub">PAUSED — click or press ESC to resume</div>
+          </div>
+        </div>
+      ` : "";
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (screen !== "playing" || !game || game.over) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        togglePause();
+        return;
+      }
+      if (game.paused) return;
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        submitInput();
+      } else if (event.key === "Backspace") {
+        event.preventDefault();
+        inputText = inputText.slice(0, -1);
+        updateInputDom();
+      } else if (/^[a-zA-Z]$/.test(event.key) && inputText.length < 12) {
+        inputText += event.key.toLowerCase();
+        updateInputDom();
+      }
+    });
+
+    renderSetupLike();
+  </script>
+</body>
+</html>
