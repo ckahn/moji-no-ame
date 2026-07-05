@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GAME_OVER_DELAY_MS } from "../game/constants";
 import {
+  clearInput,
   computeFinalStats,
   createGame,
   eraseChar,
@@ -53,6 +54,11 @@ export function GameScreen({
       if (event.key === "Escape") {
         event.preventDefault();
         setState(togglePause);
+        return;
+      }
+      if (event.key === "Backspace" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setState(clearInput);
         return;
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;

@@ -110,8 +110,8 @@ export function SetupScreen({
           drains all hearts, you still see your results here, but the button returns to the normal{" "}
           <b>START</b> flow. After losing on level 2 or later, <b>CONTINUE LEVEL N</b> restarts the
           level you lost with full hearts; <b>RESTART FROM LEVEL 1</b> starts over. The game notices
-          what you fumble and quietly deals it back sooner and more often. <b>ESC</b> or a click
-          pauses while playing.
+          what you fumble and quietly deals it back sooner and more often. <b>CMD/CTRL+BACKSPACE</b>{" "}
+          clears your typed input. <b>ESC</b> or a click pauses while playing.
         </div>
       </div>
     </div>

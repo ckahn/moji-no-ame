@@ -231,6 +231,11 @@ export function eraseChar(prev: GameState): GameState {
   return { ...prev, inputText: prev.inputText.slice(0, -1) };
 }
 
+export function clearInput(prev: GameState): GameState {
+  if (prev.over || prev.paused) return prev;
+  return { ...prev, inputText: "" };
+}
+
 export function togglePause(prev: GameState): GameState {
   if (prev.over) return prev;
   return { ...prev, paused: !prev.paused };
