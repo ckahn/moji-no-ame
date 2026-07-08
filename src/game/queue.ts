@@ -42,6 +42,16 @@ export function buildLevelQueue(
   return groups;
 }
 
+/** Inserts a group at a random index within the first `maxIndex` queue slots. */
+export function insertRandomly(
+  queue: readonly (readonly KanaEntry[])[],
+  parts: readonly KanaEntry[],
+  maxIndex: number,
+): (readonly KanaEntry[])[] {
+  const idx = Math.floor(Math.random() * Math.min(maxIndex, queue.length + 1));
+  return [...queue.slice(0, idx), parts, ...queue.slice(idx)];
+}
+
 /** All accepted romaji strings for a tile (cartesian product of part spellings). */
 export function acceptFor(parts: readonly KanaEntry[]): string[] {
   return parts.reduce<string[]>(
