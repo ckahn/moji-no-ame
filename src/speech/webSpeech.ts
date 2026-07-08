@@ -4,6 +4,15 @@ import type { Transcriber, TranscriberCallbacks } from "./transcriber";
 const RESTART_DELAY_MS = 250;
 const MAX_ALTERNATIVES = 5;
 
+/**
+ * A session that ends this fast without ever producing a result didn't hear
+ * real audio — it was rejected outright (e.g. Brave blocks the Google speech
+ * backend the API relies on, without surfacing a permission-style error).
+ */
+const STALL_SESSION_MS = 1500;
+/** Consecutive no-result sessions before giving up and reporting "stalled". */
+const STALL_STREAK_LIMIT = 3;
+
 // Minimal Web Speech API typings — SpeechRecognition isn't in lib.dom.
 interface WSAlternative {
   readonly transcript: string;
@@ -59,11 +68,14 @@ export function createWebSpeechTranscriber(callbacks: TranscriberCallbacks): Tra
   let session = 0;
   let active: WSRecognition | null = null;
   let restartTimer = 0;
+  let noResultStreak = 0;
 
   const boot = () => {
     if (stopped) return;
     session += 1;
     const sessionId = session;
+    const startedAt = performance.now();
+    let gotResult = false;
     const recognition = new Recognition();
     active = recognition;
     recognition.lang = "ja-JP";
@@ -72,6 +84,8 @@ export function createWebSpeechTranscriber(callbacks: TranscriberCallbacks): Tra
     recognition.maxAlternatives = MAX_ALTERNATIVES;
     recognition.onstart = () => callbacks.onStatus("listening");
     recognition.onresult = (event) => {
+      gotResult = true;
+      noResultStreak = 0;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]!;
         const alternatives: string[] = [];
@@ -88,7 +102,18 @@ export function createWebSpeechTranscriber(callbacks: TranscriberCallbacks): Tra
       }
     };
     recognition.onend = () => {
-      if (!stopped) restartTimer = window.setTimeout(boot, RESTART_DELAY_MS);
+      if (stopped) return;
+      if (!gotResult && performance.now() - startedAt < STALL_SESSION_MS) {
+        noResultStreak += 1;
+      } else {
+        noResultStreak = 0;
+      }
+      if (noResultStreak >= STALL_STREAK_LIMIT) {
+        stopped = true;
+        callbacks.onStatus("stalled");
+        return;
+      }
+      restartTimer = window.setTimeout(boot, RESTART_DELAY_MS);
     };
     try {
       recognition.start();
@@ -103,6 +128,7 @@ export function createWebSpeechTranscriber(callbacks: TranscriberCallbacks): Tra
     start() {
       if (!stopped) return;
       stopped = false;
+      noResultStreak = 0;
       callbacks.onStatus("starting");
       boot();
     },

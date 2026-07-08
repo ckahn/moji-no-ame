@@ -6,6 +6,9 @@ const LABELS: Record<TranscriberStatus, string> = {
   listening: "listening",
   denied: "mic blocked — allow microphone access and reload",
   unavailable: "speech recognition not supported here — try Chrome",
+  stalled:
+    "recognizer isn't returning results — Brave blocks this by default, enable " +
+    "\"Use Google services for speech recognition\" in brave://settings/system and reload",
 };
 
 export function MicStatus({ status }: { status: TranscriberStatus }) {

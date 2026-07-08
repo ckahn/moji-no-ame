@@ -10,7 +10,8 @@ export type TranscriberStatus =
   | "starting"
   | "listening"
   | "denied"
-  | "unavailable";
+  | "unavailable"
+  | "stalled";
 
 /** One utterance segment. Interim segments re-emit under the same key until final. */
 export interface TranscriptSegment {
