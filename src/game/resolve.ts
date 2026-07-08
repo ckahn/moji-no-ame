@@ -1,4 +1,4 @@
-import { PARTICLE_MS, SHAKE_MS } from "./constants";
+import { GHOST_MS, PARTICLE_MS, SHAKE_MS } from "./constants";
 import { insertRandomly, partsText } from "./queue";
 import { bumpStruggle } from "./struggle";
 import type { FallingItem, GameState, Particle } from "./types";
@@ -14,21 +14,28 @@ export function makeParticle(
   k: string,
   kind: Particle["kind"],
   now: number,
+  ttlMs: number = PARTICLE_MS,
 ): Particle {
-  return { id: uid(), x, y, k, kind, expiresAt: now + PARTICLE_MS };
+  return { id: uid(), x, y, k, kind, expiresAt: now + ttlMs };
 }
 
 /** Clears a falling tile: removes it, credits progress, eases its struggle. */
 export function clearTile(prev: GameState, target: FallingItem, now: number): GameState {
   let struggle = prev.struggle;
   for (const [k] of target.parts) struggle = bumpStruggle(struggle, k, -1);
+  const particles = [
+    ...prev.particles,
+    makeParticle(target.x, target.y, target.text, "clear", now),
+  ];
+  const gloss = prev.glosses.get(target.text);
+  if (gloss) particles.push(makeParticle(target.x, target.y, gloss, "ghost", now, GHOST_MS));
   return {
     ...prev,
     items: prev.items.filter((item) => item.id !== target.id),
     totalCleared: prev.totalCleared + 1,
     levelCleared: prev.levelCleared + 1,
     struggle,
-    particles: [...prev.particles, makeParticle(target.x, target.y, target.text, "clear", now)],
+    particles,
   };
 }
 

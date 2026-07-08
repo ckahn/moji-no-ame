@@ -25,6 +25,7 @@ interface GameScreenProps {
   startLevel: number;
   isContinue: boolean;
   struggle: StruggleMap;
+  glosses: ReadonlyMap<string, string>;
   onGameOver: (stats: FinalStats, struggle: StruggleMap) => void;
 }
 
@@ -34,10 +35,20 @@ export function GameScreen({
   startLevel,
   isContinue,
   struggle,
+  glosses,
   onGameOver,
 }: GameScreenProps) {
   const [state, setState] = useState(() =>
-    createGame({ pool, tileSize, level: startLevel, isContinue, struggle, now: performance.now() }),
+    createGame({
+      pool,
+      tileSize,
+      level: startLevel,
+      isContinue,
+      struggle,
+      now: performance.now(),
+      speechMode: false,
+      glosses,
+    }),
   );
   const overReported = useRef(false);
 
@@ -68,7 +79,7 @@ export function GameScreen({
       } else if (event.key === "Backspace") {
         event.preventDefault();
         setState(eraseChar);
-      } else if (/^[a-zA-Z]$/.test(event.key)) {
+      } else if (/^[a-zA-Z-]$/.test(event.key)) {
         setState((s) => typeChar(s, event.key));
       }
     };

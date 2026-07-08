@@ -6,7 +6,7 @@ export function ParticlesLayer({ particles }: { particles: readonly Particle[] }
       {particles.map((p) => (
         <div
           key={p.id}
-          className={`particle kr-jp ${p.kind}`}
+          className={p.kind === "ghost" ? "particle ghost" : `particle kr-jp ${p.kind}`}
           style={{ left: `${p.x}%`, top: `${p.y}%` }}
         >
           {p.k}

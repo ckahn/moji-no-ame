@@ -10,6 +10,7 @@ import { ROMAJI } from "./kana";
 import { acceptFor, buildLevelQueue, insertRandomly, partsText } from "./queue";
 import { clearTile, makeParticle, recordMiss, uid } from "./resolve";
 import { bumpStruggle } from "./struggle";
+import { wordReading } from "./words";
 import type {
   DrownedStat,
   FallingItem,
@@ -29,6 +30,8 @@ export interface NewGameArgs {
   isContinue: boolean;
   struggle: StruggleMap;
   now: number;
+  speechMode: boolean;
+  glosses: ReadonlyMap<string, string>;
 }
 
 export function createGame(args: NewGameArgs): GameState {
@@ -59,6 +62,8 @@ export function createGame(args: NewGameArgs): GameState {
     paused: false,
     particles: [],
     inputText: "",
+    speechMode: args.speechMode,
+    glosses: args.glosses,
     shakeUntil: 0,
     struggle: args.struggle,
     now: args.now,
@@ -206,6 +211,6 @@ export function computeFinalStats(state: GameState): FinalStats {
       .filter(([, n]) => n > 0)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 12)
-      .map(([k, n]) => ({ k, n, r: (ROMAJI.get(k) ?? ["?"])[0]! })),
+      .map(([k, n]) => ({ k, n, r: ROMAJI.get(k)?.[0] ?? wordReading(k) ?? "?" })),
   };
 }

@@ -2,7 +2,14 @@ import { useMemo, useRef, useState } from "react";
 import { GameScreen } from "./components/GameScreen";
 import { SetupScreen } from "./components/SetupScreen";
 import { selectedPool } from "./game/kana";
-import type { FinalStats, SetKey, SetSelection, StruggleMap } from "./game/types";
+import { WORD_GLOSSES, WORDS_POOL } from "./game/words";
+import type {
+  FinalStats,
+  GameMode,
+  SetKey,
+  SetSelection,
+  StruggleMap,
+} from "./game/types";
 
 type Screen = "setup" | "playing" | "gameover";
 
@@ -12,8 +19,11 @@ interface RunConfig {
   isContinue: boolean;
 }
 
+const NO_GLOSSES: ReadonlyMap<string, string> = new Map();
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>("setup");
+  const [mode, setMode] = useState<GameMode>("kana");
   const [selected, setSelected] = useState<SetSelection>({
     basic: true,
     dakuten: false,
@@ -25,7 +35,10 @@ export default function App() {
   const [run, setRun] = useState<RunConfig | null>(null);
   const runIdRef = useRef(0);
 
-  const pool = useMemo(() => selectedPool(selected), [selected]);
+  const pool = useMemo(
+    () => (mode === "words" ? WORDS_POOL : selectedPool(selected)),
+    [mode, selected],
+  );
 
   const startLevel = (level: number, isContinue: boolean) => {
     if (pool.length === 0) return;
@@ -50,10 +63,11 @@ export default function App() {
       <GameScreen
         key={run.id}
         pool={pool}
-        tileSize={tileSize}
+        tileSize={mode === "words" ? 1 : tileSize}
         startLevel={run.level}
         isContinue={run.isContinue}
         struggle={struggle}
+        glosses={mode === "words" ? WORD_GLOSSES : NO_GLOSSES}
         onGameOver={handleGameOver}
       />
     );
@@ -61,9 +75,11 @@ export default function App() {
 
   return (
     <SetupScreen
+      mode={mode}
       selected={selected}
       tileSize={tileSize}
       finalStats={screen === "gameover" ? finalStats : null}
+      onSelectMode={setMode}
       onToggleSet={handleToggleSet}
       onSelectTileSize={setTileSize}
       onStart={() => startLevel(1, false)}

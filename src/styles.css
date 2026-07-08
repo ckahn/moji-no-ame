@@ -367,6 +367,16 @@ button, input { font: inherit; }
   animation: kr-splash .6s ease-out forwards;
 }
 
+/* English meaning left behind by a cleared word; duration matches GHOST_MS. */
+.particle.ghost {
+  color: rgba(245,239,224,.92);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-shadow: 0 0 14px rgba(245,239,224,.45);
+  animation: kr-ghost 1.5s ease-out forwards;
+}
+
 .wave-wrap {
   position: absolute;
   left: 0;
@@ -485,6 +495,12 @@ button, input { font: inherit; }
 @keyframes kr-splash {
   0% { transform: scale(1); opacity: 1; }
   100% { transform: scale(0.5) translateY(26px); opacity: 0; }
+}
+
+@keyframes kr-ghost {
+  0% { opacity: 0; transform: translateY(6px); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-36px); }
 }
 
 @keyframes kr-shake {

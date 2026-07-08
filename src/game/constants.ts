@@ -14,6 +14,9 @@ export const BANNER_MS = 1600;
 /** Lifetime of clear/splash particles. */
 export const PARTICLE_MS = 700;
 
+/** Lifetime of the English-meaning ghost left behind by a cleared word. */
+export const GHOST_MS = 1500;
+
 /** Duration of the wrong-input shake on the input display. */
 export const SHAKE_MS = 350;
 

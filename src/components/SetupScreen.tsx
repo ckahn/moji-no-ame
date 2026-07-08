@@ -1,13 +1,21 @@
 import { MAX_LIVES } from "../game/constants";
 import { SET_KEYS, SETS, TILE_SIZES } from "../game/kana";
-import type { FinalStats, SetKey, SetSelection } from "../game/types";
+import { WORDS } from "../game/words";
+import type { FinalStats, GameMode, SetKey, SetSelection } from "../game/types";
 import { GameOverPanel } from "./GameOverPanel";
 
+const MODES: readonly { value: GameMode; label: string; desc: string }[] = [
+  { value: "kana", label: "Kana drill", desc: "random syllable tiles from the sets below" },
+  { value: "words", label: "Words", desc: "real katakana words — meanings appear when cleared" },
+];
+
 interface SetupScreenProps {
+  mode: GameMode;
   selected: SetSelection;
   tileSize: number;
   /** Present only when arriving here from a lost game. */
   finalStats: FinalStats | null;
+  onSelectMode: (mode: GameMode) => void;
   onToggleSet: (key: SetKey) => void;
   onSelectTileSize: (value: number) => void;
   onStart: () => void;
@@ -15,19 +23,25 @@ interface SetupScreenProps {
 }
 
 export function SetupScreen({
+  mode,
   selected,
   tileSize,
   finalStats,
+  onSelectMode,
   onToggleSet,
   onSelectTileSize,
   onStart,
   onContinue,
 }: SetupScreenProps) {
-  const totalSelected = SET_KEYS.reduce(
-    (sum, key) => sum + (selected[key] ? SETS[key].kana.length : 0),
-    0,
-  );
-  const startSuffix = totalSelected > 0 ? ` — ${totalSelected} kana, ${tileSize}-tile` : "";
+  const wordsMode = mode === "words";
+  const totalSelected = wordsMode
+    ? WORDS.length
+    : SET_KEYS.reduce((sum, key) => sum + (selected[key] ? SETS[key].kana.length : 0), 0);
+  const startSuffix = wordsMode
+    ? ` — ${WORDS.length} words`
+    : totalSelected > 0
+      ? ` — ${totalSelected} kana, ${tileSize}-tile`
+      : "";
   const canContinue = finalStats !== null && finalStats.level > 1;
 
   return (
@@ -38,42 +52,72 @@ export function SetupScreen({
 
         {finalStats && <GameOverPanel stats={finalStats} />}
 
-        <div className="section-title">Kana sets</div>
+        <div className="section-title">Game mode</div>
         <div className="set-list">
-          {SET_KEYS.map((key) => {
-            const set = SETS[key];
-            return (
-              <label key={key} className={`set-row${selected[key] ? " selected" : ""}`}>
-                <input type="checkbox" checked={selected[key]} onChange={() => onToggleSet(key)} />
-                <div className="set-copy">
-                  <div className="set-label">{set.label}</div>
-                  <div className="set-desc">{set.desc}</div>
-                </div>
-                <div className="set-count kr-jp">{set.kana.length}字</div>
-              </label>
-            );
-          })}
-        </div>
-
-        <div className="section-title">Tile size</div>
-        <div className="tile-list">
-          {TILE_SIZES.map((tile) => (
+          {MODES.map((entry) => (
             <label
-              key={tile.value}
-              className={`tile-row${tileSize === tile.value ? " selected" : ""}`}
+              key={entry.value}
+              className={`set-row${mode === entry.value ? " selected" : ""}`}
             >
               <input
                 type="radio"
-                name="tileSize"
-                checked={tileSize === tile.value}
-                onChange={() => onSelectTileSize(tile.value)}
+                name="gameMode"
+                checked={mode === entry.value}
+                onChange={() => onSelectMode(entry.value)}
               />
-              <div className="tile-number">{tile.value}</div>
-              <div className="tile-label">{tile.label}</div>
-              <div className="tile-desc">{tile.desc}</div>
+              <div className="set-copy">
+                <div className="set-label">{entry.label}</div>
+                <div className="set-desc">{entry.desc}</div>
+              </div>
+              {entry.value === "words" && <div className="set-count kr-jp">{WORDS.length}語</div>}
             </label>
           ))}
         </div>
+
+        {!wordsMode && (
+          <>
+            <div className="section-title">Kana sets</div>
+            <div className="set-list">
+              {SET_KEYS.map((key) => {
+                const set = SETS[key];
+                return (
+                  <label key={key} className={`set-row${selected[key] ? " selected" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={selected[key]}
+                      onChange={() => onToggleSet(key)}
+                    />
+                    <div className="set-copy">
+                      <div className="set-label">{set.label}</div>
+                      <div className="set-desc">{set.desc}</div>
+                    </div>
+                    <div className="set-count kr-jp">{set.kana.length}字</div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="section-title">Tile size</div>
+            <div className="tile-list">
+              {TILE_SIZES.map((tile) => (
+                <label
+                  key={tile.value}
+                  className={`tile-row${tileSize === tile.value ? " selected" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="tileSize"
+                    checked={tileSize === tile.value}
+                    onChange={() => onSelectTileSize(tile.value)}
+                  />
+                  <div className="tile-number">{tile.value}</div>
+                  <div className="tile-label">{tile.label}</div>
+                  <div className="tile-desc">{tile.desc}</div>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
 
         {canContinue ? (
           <div className="button-row">
@@ -99,7 +143,9 @@ export function SetupScreen({
         )}
 
         <div className="instructions">
-          Type the romaji, press <b>SPACE</b> or <b>ENTER</b> to fire — the lowest matching item
+          <b>Words</b> mode drops real katakana words — clear one and its English meaning drifts
+          up where it fell. Long vowels accept doubled romaji (<b>koohii</b>) or IME dashes
+          (<b>ko-hi-</b>). Type the romaji, press <b>SPACE</b> or <b>ENTER</b> to fire — the lowest matching item
           clears. Every level covers the <b>full selected set</b>, chunked using the tile size you
           chose. Tile size controls what appears in each falling block — single kana, pairs,
           triples, or quads. Levels now only control speed: <b>level 2 is faster than level 1</b>,
