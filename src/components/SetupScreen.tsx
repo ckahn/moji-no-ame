@@ -1,7 +1,7 @@
 import { MAX_LIVES } from "../game/constants";
 import { SET_KEYS, SETS, TILE_SIZES } from "../game/kana";
 import { WORDS } from "../game/words";
-import type { FinalStats, GameMode, SetKey, SetSelection } from "../game/types";
+import type { FinalStats, GameMode, InputMode, SetKey, SetSelection } from "../game/types";
 import { GameOverPanel } from "./GameOverPanel";
 
 const MODES: readonly { value: GameMode; label: string; desc: string }[] = [
@@ -9,13 +9,24 @@ const MODES: readonly { value: GameMode; label: string; desc: string }[] = [
   { value: "words", label: "Words", desc: "real katakana words — meanings appear when cleared" },
 ];
 
+const INPUT_MODES: readonly { value: InputMode; label: string; desc: string }[] = [
+  { value: "type", label: "Type", desc: "keyboard romaji, fire with SPACE/ENTER" },
+  {
+    value: "speech",
+    label: "Speak",
+    desc: "say the word aloud — needs a microphone, Chrome recommended",
+  },
+];
+
 interface SetupScreenProps {
   mode: GameMode;
+  inputMode: InputMode;
   selected: SetSelection;
   tileSize: number;
   /** Present only when arriving here from a lost game. */
   finalStats: FinalStats | null;
   onSelectMode: (mode: GameMode) => void;
+  onSelectInputMode: (inputMode: InputMode) => void;
   onToggleSet: (key: SetKey) => void;
   onSelectTileSize: (value: number) => void;
   onStart: () => void;
@@ -24,10 +35,12 @@ interface SetupScreenProps {
 
 export function SetupScreen({
   mode,
+  inputMode,
   selected,
   tileSize,
   finalStats,
   onSelectMode,
+  onSelectInputMode,
   onToggleSet,
   onSelectTileSize,
   onStart,
@@ -73,6 +86,32 @@ export function SetupScreen({
             </label>
           ))}
         </div>
+
+        {wordsMode && (
+          <>
+            <div className="section-title">Input</div>
+            <div className="set-list">
+              {INPUT_MODES.map((entry) => (
+                <label
+                  key={entry.value}
+                  className={`set-row${inputMode === entry.value ? " selected" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="inputMode"
+                    checked={inputMode === entry.value}
+                    onChange={() => onSelectInputMode(entry.value)}
+                  />
+                  <div className="set-copy">
+                    <div className="set-label">{entry.label}</div>
+                    <div className="set-desc">{entry.desc}</div>
+                  </div>
+                  <div className="set-count">{entry.value === "speech" ? "🎤" : "⌨️"}</div>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
 
         {!wordsMode && (
           <>
@@ -145,7 +184,10 @@ export function SetupScreen({
         <div className="instructions">
           <b>Words</b> mode drops real katakana words — clear one and its English meaning drifts
           up where it fell. Long vowels accept doubled romaji (<b>koohii</b>) or IME dashes
-          (<b>ko-hi-</b>). Type the romaji, press <b>SPACE</b> or <b>ENTER</b> to fire — the lowest matching item
+          (<b>ko-hi-</b>). With <b>Speak</b> input the game listens continuously: say a falling
+          word and it clears the moment it's recognized; a clearly heard word that matches
+          nothing counts as a miss. Typing still works as a fallback. Type the romaji, press{" "}
+          <b>SPACE</b> or <b>ENTER</b> to fire — the lowest matching item
           clears. Every level covers the <b>full selected set</b>, chunked using the tile size you
           chose. Tile size controls what appears in each falling block — single kana, pairs,
           triples, or quads. Levels now only control speed: <b>level 2 is faster than level 1</b>,

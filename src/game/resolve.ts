@@ -39,6 +39,27 @@ export function clearTile(prev: GameState, target: FallingItem, now: number): Ga
   };
 }
 
+/** Clears whichever of the given tiles are still falling (spoken hits). */
+export function clearItemsById(
+  prev: GameState,
+  ids: readonly number[],
+  now: number,
+): GameState {
+  if (prev.over || prev.paused) return prev;
+  let state = prev;
+  for (const id of ids) {
+    const item = state.items.find((candidate) => candidate.id === id);
+    if (item) state = clearTile(state, item, now);
+  }
+  return state;
+}
+
+/** Records a spoken answer that matched nothing on screen. */
+export function speechMiss(prev: GameState, heard: string, now: number): GameState {
+  if (prev.over || prev.paused || heard.length === 0) return prev;
+  return recordMiss(prev, heard, now);
+}
+
 /** Records a wrong answer: logs it against the lowest tile and requeues that tile. */
 export function recordMiss(prev: GameState, typed: string, now: number): GameState {
   const next: GameState = { ...prev, errors: prev.errors + 1 };

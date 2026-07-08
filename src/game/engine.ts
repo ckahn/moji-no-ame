@@ -5,6 +5,7 @@ import {
   MAX_INPUT_LENGTH,
   MAX_LIVES,
 } from "./constants";
+import { pickSpawnIndex } from "./conflicts";
 import { tileSizeName } from "./format";
 import { ROMAJI } from "./kana";
 import { acceptFor, buildLevelQueue, insertRandomly, partsText } from "./queue";
@@ -98,9 +99,10 @@ export function tick(prev: GameState, ts: number): GameState {
   next.elapsed = prev.elapsed + dt;
 
   if (next.queue.length > 0 && ts - next.lastSpawn > next.nextGap) {
-    const [parts, ...restQueue] = next.queue;
-    next.queue = restQueue;
-    next.items = [...next.items, spawnItem(parts!, next.level)];
+    const spawnIndex = next.speechMode ? pickSpawnIndex(next.queue, next.items) : 0;
+    const parts = next.queue[spawnIndex]!;
+    next.queue = next.queue.filter((_, i) => i !== spawnIndex);
+    next.items = [...next.items, spawnItem(parts, next.level)];
     next.lastSpawn = ts;
     next.nextGap = spawnInterval(next.level) * (0.8 + Math.random() * 0.4);
   }

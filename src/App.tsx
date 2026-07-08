@@ -6,6 +6,7 @@ import { WORD_GLOSSES, WORDS_POOL } from "./game/words";
 import type {
   FinalStats,
   GameMode,
+  InputMode,
   SetKey,
   SetSelection,
   StruggleMap,
@@ -24,6 +25,7 @@ const NO_GLOSSES: ReadonlyMap<string, string> = new Map();
 export default function App() {
   const [screen, setScreen] = useState<Screen>("setup");
   const [mode, setMode] = useState<GameMode>("kana");
+  const [inputMode, setInputMode] = useState<InputMode>("type");
   const [selected, setSelected] = useState<SetSelection>({
     basic: true,
     dakuten: false,
@@ -68,6 +70,7 @@ export default function App() {
         isContinue={run.isContinue}
         struggle={struggle}
         glosses={mode === "words" ? WORD_GLOSSES : NO_GLOSSES}
+        inputMode={mode === "words" ? inputMode : "type"}
         onGameOver={handleGameOver}
       />
     );
@@ -76,10 +79,12 @@ export default function App() {
   return (
     <SetupScreen
       mode={mode}
+      inputMode={inputMode}
       selected={selected}
       tileSize={tileSize}
       finalStats={screen === "gameover" ? finalStats : null}
       onSelectMode={setMode}
+      onSelectInputMode={setInputMode}
       onToggleSet={handleToggleSet}
       onSelectTileSize={setTileSize}
       onStart={() => startLevel(1, false)}

@@ -10,11 +10,13 @@ import {
   togglePause,
   typeChar,
 } from "../game/engine";
-import type { FinalStats, KanaEntry, StruggleMap } from "../game/types";
+import type { FinalStats, InputMode, KanaEntry, StruggleMap } from "../game/types";
+import { useSpeechInput } from "../hooks/useSpeechInput";
 import { Banner } from "./Banner";
 import { Hud } from "./Hud";
 import { InputDisplay } from "./InputDisplay";
 import { ItemsLayer } from "./ItemsLayer";
+import { MicStatus } from "./MicStatus";
 import { ParticlesLayer } from "./ParticlesLayer";
 import { PauseOverlay } from "./PauseOverlay";
 import { Wave } from "./Wave";
@@ -26,6 +28,7 @@ interface GameScreenProps {
   isContinue: boolean;
   struggle: StruggleMap;
   glosses: ReadonlyMap<string, string>;
+  inputMode: InputMode;
   onGameOver: (stats: FinalStats, struggle: StruggleMap) => void;
 }
 
@@ -36,8 +39,10 @@ export function GameScreen({
   isContinue,
   struggle,
   glosses,
+  inputMode,
   onGameOver,
 }: GameScreenProps) {
+  const speechEnabled = inputMode === "speech";
   const [state, setState] = useState(() =>
     createGame({
       pool,
@@ -46,11 +51,21 @@ export function GameScreen({
       isContinue,
       struggle,
       now: performance.now(),
-      speechMode: false,
+      speechMode: speechEnabled,
       glosses,
     }),
   );
   const overReported = useRef(false);
+
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+  const { status: micStatus, heard } = useSpeechInput({
+    enabled: speechEnabled,
+    stateRef,
+    setState,
+  });
 
   useEffect(() => {
     let rafId = requestAnimationFrame(function loop(ts) {
@@ -104,7 +119,12 @@ export function GameScreen({
       <ItemsLayer items={state.items} />
       <ParticlesLayer particles={state.particles} />
       <Wave />
-      <InputDisplay text={state.inputText} shake={state.now < state.shakeUntil} />
+      {speechEnabled && <MicStatus status={micStatus} />}
+      <InputDisplay
+        text={speechEnabled && !state.inputText ? heard : state.inputText}
+        shake={state.now < state.shakeUntil}
+        placeholder={speechEnabled ? "speak the word…" : "type romaji…"}
+      />
       {bannerVisible && state.banner && <Banner banner={state.banner} />}
       {state.paused && <PauseOverlay />}
     </div>
