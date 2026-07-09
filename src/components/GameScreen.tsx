@@ -84,6 +84,9 @@ export function GameScreen({
   }, []);
 
   useEffect(() => {
+    // IME-dash long vowels (e.g. "ko-hi-") only appear in words-mode romaji;
+    // kana drills never accept a hyphen, so don't let it into their input.
+    const allowHyphen = pool.some(([, romaji]) => romaji.some((r) => r.includes("-")));
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -102,13 +105,13 @@ export function GameScreen({
       } else if (event.key === "Backspace") {
         event.preventDefault();
         setState(eraseChar);
-      } else if (/^[a-zA-Z-]$/.test(event.key)) {
+      } else if (/^[a-zA-Z]$/.test(event.key) || (event.key === "-" && allowHyphen)) {
         setState((s) => typeChar(s, event.key));
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [pool]);
 
   useEffect(() => {
     if (!state.over || overReported.current) return;
