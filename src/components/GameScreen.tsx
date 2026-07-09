@@ -60,6 +60,10 @@ export function GameScreen({
   const overReported = useRef(false);
 
   const stateRef = useRef(state);
+  // TODO: this re-schedules every render, including all 60fps RAF ticks, even
+  // when speech is off. Cost is negligible today but could move to a
+  // render-body assignment (the standard "latest ref" pattern) if it ever
+  // shows up in profiling.
   useEffect(() => {
     stateRef.current = state;
   });

@@ -61,6 +61,9 @@ export function speechMiss(prev: GameState, heard: string, now: number): GameSta
 }
 
 /** Records a wrong answer: logs it against the lowest tile and requeues that tile. */
+// TODO: this "lowest falling item" scan is also duplicated in
+// engine.ts:submitInput and speech/match.ts:lowest. Worth factoring into one
+// shared helper so a future tie-break change doesn't need three edits.
 export function recordMiss(prev: GameState, typed: string, now: number): GameState {
   const next: GameState = { ...prev, errors: prev.errors + 1 };
   let lowest: FallingItem | null = null;

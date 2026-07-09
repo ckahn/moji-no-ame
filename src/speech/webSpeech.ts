@@ -101,6 +101,9 @@ export function createWebSpeechTranscriber(callbacks: TranscriberCallbacks): Tra
         callbacks.onStatus("denied");
       }
     };
+    // TODO: this reboots silently on a normal session end, so the status
+    // stays "listening" for the ~RESTART_DELAY_MS+startup gap where nothing
+    // is actually listening. Consider a transient "restarting" status.
     recognition.onend = () => {
       if (stopped) return;
       if (!gotResult && performance.now() - startedAt < STALL_SESSION_MS) {
