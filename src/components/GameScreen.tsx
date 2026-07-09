@@ -10,11 +10,15 @@ import {
   togglePause,
   typeChar,
 } from "../game/engine";
-import type { FinalStats, KanaEntry, StruggleMap } from "../game/types";
+import type { FinalStats, InputMode, KanaEntry, StruggleMap } from "../game/types";
+import { useSpeechInput } from "../hooks/useSpeechInput";
 import { Banner } from "./Banner";
 import { Hud } from "./Hud";
 import { InputDisplay } from "./InputDisplay";
 import { ItemsLayer } from "./ItemsLayer";
+import { isErrorStatus } from "../speech/transcriber";
+import { MicErrorOverlay } from "./MicErrorOverlay";
+import { MicStatus } from "./MicStatus";
 import { ParticlesLayer } from "./ParticlesLayer";
 import { PauseOverlay } from "./PauseOverlay";
 import { Wave } from "./Wave";
@@ -25,6 +29,8 @@ interface GameScreenProps {
   startLevel: number;
   isContinue: boolean;
   struggle: StruggleMap;
+  glosses: ReadonlyMap<string, string>;
+  inputMode: InputMode;
   onGameOver: (stats: FinalStats, struggle: StruggleMap) => void;
 }
 
@@ -34,12 +40,44 @@ export function GameScreen({
   startLevel,
   isContinue,
   struggle,
+  glosses,
+  inputMode,
   onGameOver,
 }: GameScreenProps) {
+  const speechEnabled = inputMode === "speech";
   const [state, setState] = useState(() =>
-    createGame({ pool, tileSize, level: startLevel, isContinue, struggle, now: performance.now() }),
+    createGame({
+      pool,
+      tileSize,
+      level: startLevel,
+      isContinue,
+      struggle,
+      now: performance.now(),
+      speechMode: speechEnabled,
+      glosses,
+    }),
   );
   const overReported = useRef(false);
+
+  const stateRef = useRef(state);
+  // TODO: this re-schedules every render, including all 60fps RAF ticks, even
+  // when speech is off. Cost is negligible today but could move to a
+  // render-body assignment (the standard "latest ref" pattern) if it ever
+  // shows up in profiling.
+  useEffect(() => {
+    stateRef.current = state;
+  });
+  const { status: micStatus, heard } = useSpeechInput({
+    enabled: speechEnabled,
+    stateRef,
+    setState,
+  });
+  const micError = speechEnabled && isErrorStatus(micStatus);
+
+  useEffect(() => {
+    if (!micError) return;
+    setState((s) => (s.over || s.paused ? s : { ...s, paused: true }));
+  }, [micError]);
 
   useEffect(() => {
     let rafId = requestAnimationFrame(function loop(ts) {
@@ -50,6 +88,9 @@ export function GameScreen({
   }, []);
 
   useEffect(() => {
+    // IME-dash long vowels (e.g. "ko-hi-") only appear in words-mode romaji;
+    // kana drills never accept a hyphen, so don't let it into their input.
+    const allowHyphen = pool.some(([, romaji]) => romaji.some((r) => r.includes("-")));
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -68,13 +109,13 @@ export function GameScreen({
       } else if (event.key === "Backspace") {
         event.preventDefault();
         setState(eraseChar);
-      } else if (/^[a-zA-Z]$/.test(event.key)) {
+      } else if (/^[a-zA-Z]$/.test(event.key) || (event.key === "-" && allowHyphen)) {
         setState((s) => typeChar(s, event.key));
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [pool]);
 
   useEffect(() => {
     if (!state.over || overReported.current) return;
@@ -93,9 +134,14 @@ export function GameScreen({
       <ItemsLayer items={state.items} />
       <ParticlesLayer particles={state.particles} />
       <Wave />
-      <InputDisplay text={state.inputText} shake={state.now < state.shakeUntil} />
+      {speechEnabled && !(state.paused && micError) && <MicStatus status={micStatus} />}
+      <InputDisplay
+        text={speechEnabled && !state.inputText ? heard : state.inputText}
+        shake={state.now < state.shakeUntil}
+        placeholder={speechEnabled ? "speak the word…" : "type romaji…"}
+      />
       {bannerVisible && state.banner && <Banner banner={state.banner} />}
-      {state.paused && <PauseOverlay />}
+      {state.paused && (micError ? <MicErrorOverlay status={micStatus} /> : <PauseOverlay />)}
     </div>
   );
 }

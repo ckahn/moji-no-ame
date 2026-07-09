@@ -9,6 +9,12 @@ export interface KanaSet {
 
 export type SetKey = "basic" | "dakuten" | "yoon";
 
+/** What falls from the sky: random kana constructions or real katakana words. */
+export type GameMode = "kana" | "words";
+
+/** How the player answers tiles: keyboard romaji or spoken kana. */
+export type InputMode = "type" | "speech";
+
 export type SetSelection = Record<SetKey, boolean>;
 
 export interface TileSizeOption {
@@ -40,7 +46,7 @@ export interface Particle {
   x: number;
   y: number;
   k: string;
-  kind: "clear" | "splash";
+  kind: "clear" | "splash" | "ghost";
   expiresAt: number;
 }
 
@@ -85,6 +91,10 @@ export interface GameState {
   paused: boolean;
   particles: readonly Particle[];
   inputText: string;
+  /** True when playing by voice; spawning then avoids sound-alike tiles. */
+  speechMode: boolean;
+  /** Tile text → English meaning, shown as a ghost on clear. Empty for kana mode. */
+  glosses: ReadonlyMap<string, string>;
   shakeUntil: number;
   struggle: StruggleMap;
   /** Timestamp of the last tick, used to derive time-based UI states. */

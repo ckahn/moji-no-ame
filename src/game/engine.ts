@@ -4,28 +4,25 @@ import {
   GROUND_Y,
   MAX_INPUT_LENGTH,
   MAX_LIVES,
-  PARTICLE_MS,
-  SHAKE_MS,
 } from "./constants";
+import { pickSpawnIndex } from "./conflicts";
 import { tileSizeName } from "./format";
 import { ROMAJI } from "./kana";
-import { acceptFor, buildLevelQueue, partsText } from "./queue";
+import { acceptFor, buildLevelQueue, insertRandomly, partsText } from "./queue";
+import { clearTile, makeParticle, recordMiss, uid } from "./resolve";
 import { bumpStruggle } from "./struggle";
+import { wordReading } from "./words";
 import type {
   DrownedStat,
   FallingItem,
   FinalStats,
   GameState,
   KanaEntry,
-  Particle,
   StruggleMap,
 } from "./types";
 
 const baseSpeed = (level: number): number => (6 + level * 1.6) * 1.1;
 const spawnInterval = (level: number): number => Math.max(2600 - (level - 1) * 220, 950);
-
-let nextId = 0;
-const uid = (): number => ++nextId;
 
 export interface NewGameArgs {
   pool: readonly KanaEntry[];
@@ -34,6 +31,8 @@ export interface NewGameArgs {
   isContinue: boolean;
   struggle: StruggleMap;
   now: number;
+  speechMode: boolean;
+  glosses: ReadonlyMap<string, string>;
 }
 
 export function createGame(args: NewGameArgs): GameState {
@@ -64,6 +63,8 @@ export function createGame(args: NewGameArgs): GameState {
     paused: false,
     particles: [],
     inputText: "",
+    speechMode: args.speechMode,
+    glosses: args.glosses,
     shakeUntil: 0,
     struggle: args.struggle,
     now: args.now,
@@ -83,20 +84,6 @@ function spawnItem(parts: readonly KanaEntry[], level: number): FallingItem {
   };
 }
 
-function makeParticle(x: number, y: number, k: string, kind: Particle["kind"], now: number): Particle {
-  return { id: uid(), x, y, k, kind, expiresAt: now + PARTICLE_MS };
-}
-
-/** Inserts a group at a random index within the first `maxIndex` queue slots. */
-function insertRandomly(
-  queue: readonly (readonly KanaEntry[])[],
-  parts: readonly KanaEntry[],
-  maxIndex: number,
-): (readonly KanaEntry[])[] {
-  const idx = Math.floor(Math.random() * Math.min(maxIndex, queue.length + 1));
-  return [...queue.slice(0, idx), parts, ...queue.slice(idx)];
-}
-
 /** Advances the simulation by one animation frame. Pure: returns a new state. */
 export function tick(prev: GameState, ts: number): GameState {
   if (prev.over) return prev;
@@ -112,9 +99,10 @@ export function tick(prev: GameState, ts: number): GameState {
   next.elapsed = prev.elapsed + dt;
 
   if (next.queue.length > 0 && ts - next.lastSpawn > next.nextGap) {
-    const [parts, ...restQueue] = next.queue;
-    next.queue = restQueue;
-    next.items = [...next.items, spawnItem(parts!, next.level)];
+    const spawnIndex = next.speechMode ? pickSpawnIndex(next.queue, next.items) : 0;
+    const parts = next.queue[spawnIndex]!;
+    next.queue = next.queue.filter((_, i) => i !== spawnIndex);
+    next.items = [...next.items, spawnItem(parts, next.level)];
     next.lastSpawn = ts;
     next.nextGap = spawnInterval(next.level) * (0.8 + Math.random() * 0.4);
   }
@@ -184,41 +172,7 @@ export function submitInput(prev: GameState, now: number): GameState {
   for (const item of next.items) {
     if (item.accept.includes(val) && (!target || item.y > target.y)) target = item;
   }
-
-  if (target) {
-    const hit = target;
-    next.items = next.items.filter((item) => item.id !== hit.id);
-    next.totalCleared = prev.totalCleared + 1;
-    next.levelCleared = prev.levelCleared + 1;
-    let struggle = next.struggle;
-    for (const [k] of hit.parts) struggle = bumpStruggle(struggle, k, -1);
-    next.struggle = struggle;
-    next.particles = [...next.particles, makeParticle(hit.x, hit.y, hit.text, "clear", now)];
-    return next;
-  }
-
-  next.errors = prev.errors + 1;
-  let lowest: FallingItem | null = null;
-  for (const item of next.items) {
-    if (!lowest || item.y > lowest.y) lowest = item;
-  }
-  next.wrongLog = [
-    ...next.wrongLog,
-    { typed: val, k: lowest ? lowest.text : "—", r: lowest ? lowest.accept[0]! : "" },
-  ];
-  if (lowest) {
-    const missed = lowest;
-    let struggle = next.struggle;
-    for (const [k] of missed.parts) struggle = bumpStruggle(struggle, k, 1);
-    next.struggle = struggle;
-    const copies = next.queue.filter((group) => partsText(group) === missed.text).length;
-    if (copies < 2) {
-      next.queue = insertRandomly(next.queue, missed.parts, 4);
-      next.levelGoal = prev.levelGoal + 1;
-    }
-  }
-  next.shakeUntil = now + SHAKE_MS;
-  return next;
+  return target ? clearTile(next, target, now) : recordMiss(next, val, now);
 }
 
 export function typeChar(prev: GameState, key: string): GameState {
@@ -259,6 +213,6 @@ export function computeFinalStats(state: GameState): FinalStats {
       .filter(([, n]) => n > 0)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 12)
-      .map(([k, n]) => ({ k, n, r: (ROMAJI.get(k) ?? ["?"])[0]! })),
+      .map(([k, n]) => ({ k, n, r: ROMAJI.get(k)?.[0] ?? wordReading(k) ?? "?" })),
   };
 }
