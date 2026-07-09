@@ -6,9 +6,9 @@ export function candidatesFor(alternatives: readonly string[]): readonly string[
   return [...new Set(alternatives.map(matchKey).filter((c) => c.length > 0))];
 }
 
-/** True if some candidate was clean kana — a miss can be judged fairly. */
-export function anyJudgeable(candidates: readonly string[]): boolean {
-  return candidates.some(isKatakana);
+/** The candidate that actually justifies judging this segment as a miss, if any. */
+export function firstJudgeable(candidates: readonly string[]): string | undefined {
+  return candidates.find(isKatakana);
 }
 
 /**

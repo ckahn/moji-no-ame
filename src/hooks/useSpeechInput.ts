@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { clearItemsById, speechMiss } from "../game/resolve";
 import type { GameState } from "../game/types";
-import { anyJudgeable, candidatesFor, findSpeechMatches } from "../speech/match";
+import { candidatesFor, findSpeechMatches, firstJudgeable } from "../speech/match";
 import type { TranscriberFactory, TranscriberStatus } from "../speech/transcriber";
 import { createWebSpeechTranscriber } from "../speech/webSpeech";
 
@@ -55,10 +55,14 @@ export function useSpeechInput({
         const ids = findSpeechMatches(snapshot.items, candidates);
         if (ids.length > 0) {
           consumed.add(key);
+          setHeard("");
           setState((prev) => clearItemsById(prev, ids, now));
-        } else if (isFinal && anyJudgeable(candidates)) {
-          consumed.add(key);
-          setState((prev) => speechMiss(prev, display, now));
+        } else if (isFinal) {
+          const judged = firstJudgeable(candidates);
+          if (judged) {
+            consumed.add(key);
+            setState((prev) => speechMiss(prev, judged, now));
+          }
         }
         if (consumed.size > MAX_CONSUMED_KEYS) {
           consumedRef.current = new Set([...consumed].slice(-MAX_CONSUMED_KEYS / 2));
