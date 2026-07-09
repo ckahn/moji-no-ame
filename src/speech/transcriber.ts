@@ -13,6 +13,17 @@ export type TranscriberStatus =
   | "unavailable"
   | "stalled";
 
+/** Statuses meaning recognition has given up and won't recover on its own. */
+const ERROR_STATUSES: ReadonlySet<TranscriberStatus> = new Set([
+  "denied",
+  "unavailable",
+  "stalled",
+]);
+
+export function isErrorStatus(status: TranscriberStatus): boolean {
+  return ERROR_STATUSES.has(status);
+}
+
 /** One utterance segment. Interim segments re-emit under the same key until final. */
 export interface TranscriptSegment {
   /** Transcription hypotheses, most confident first. */

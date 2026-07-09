@@ -16,6 +16,7 @@ import { Banner } from "./Banner";
 import { Hud } from "./Hud";
 import { InputDisplay } from "./InputDisplay";
 import { ItemsLayer } from "./ItemsLayer";
+import { isErrorStatus } from "../speech/transcriber";
 import { MicErrorOverlay } from "./MicErrorOverlay";
 import { MicStatus } from "./MicStatus";
 import { ParticlesLayer } from "./ParticlesLayer";
@@ -67,7 +68,7 @@ export function GameScreen({
     stateRef,
     setState,
   });
-  const micError = speechEnabled && (micStatus === "denied" || micStatus === "stalled" || micStatus === "unavailable");
+  const micError = speechEnabled && isErrorStatus(micStatus);
 
   useEffect(() => {
     if (!micError) return;
@@ -126,7 +127,7 @@ export function GameScreen({
       <ItemsLayer items={state.items} />
       <ParticlesLayer particles={state.particles} />
       <Wave />
-      {speechEnabled && !micError && <MicStatus status={micStatus} />}
+      {speechEnabled && !(state.paused && micError) && <MicStatus status={micStatus} />}
       <InputDisplay
         text={speechEnabled && !state.inputText ? heard : state.inputText}
         shake={state.now < state.shakeUntil}
