@@ -16,6 +16,7 @@ import { Banner } from "./Banner";
 import { Hud } from "./Hud";
 import { InputDisplay } from "./InputDisplay";
 import { ItemsLayer } from "./ItemsLayer";
+import { MicErrorOverlay } from "./MicErrorOverlay";
 import { MicStatus } from "./MicStatus";
 import { ParticlesLayer } from "./ParticlesLayer";
 import { PauseOverlay } from "./PauseOverlay";
@@ -66,6 +67,12 @@ export function GameScreen({
     stateRef,
     setState,
   });
+  const micError = speechEnabled && (micStatus === "denied" || micStatus === "stalled" || micStatus === "unavailable");
+
+  useEffect(() => {
+    if (!micError) return;
+    setState((s) => (s.over || s.paused ? s : { ...s, paused: true }));
+  }, [micError]);
 
   useEffect(() => {
     let rafId = requestAnimationFrame(function loop(ts) {
@@ -119,14 +126,14 @@ export function GameScreen({
       <ItemsLayer items={state.items} />
       <ParticlesLayer particles={state.particles} />
       <Wave />
-      {speechEnabled && <MicStatus status={micStatus} />}
+      {speechEnabled && !micError && <MicStatus status={micStatus} />}
       <InputDisplay
         text={speechEnabled && !state.inputText ? heard : state.inputText}
         shake={state.now < state.shakeUntil}
         placeholder={speechEnabled ? "speak the word…" : "type romaji…"}
       />
       {bannerVisible && state.banner && <Banner banner={state.banner} />}
-      {state.paused && <PauseOverlay />}
+      {state.paused && (micError ? <MicErrorOverlay status={micStatus} /> : <PauseOverlay />)}
     </div>
   );
 }

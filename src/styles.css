@@ -431,13 +431,15 @@ button, input { font: inherit; }
 }
 
 .mic-status.mic-denied,
-.mic-status.mic-unavailable {
+.mic-status.mic-unavailable,
+.mic-status.mic-stalled {
   border-color: var(--red);
   color: var(--red);
 }
 
 .mic-status.mic-denied .mic-dot,
-.mic-status.mic-unavailable .mic-dot {
+.mic-status.mic-unavailable .mic-dot,
+.mic-status.mic-stalled .mic-dot {
   background: var(--red);
 }
 
@@ -527,6 +529,25 @@ button, input { font: inherit; }
   opacity: 0.7;
   margin-top: 8px;
   letter-spacing: 0.15em;
+}
+
+.mic-error-card {
+  max-width: 460px;
+  padding: 0 28px;
+}
+
+.mic-error-title {
+  font-size: 32px;
+  color: var(--red);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mic-error-card .pause-sub {
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: normal;
+  margin-top: 14px;
 }
 
 @keyframes kr-fall-in {
